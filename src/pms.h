@@ -14,7 +14,7 @@
 //   Pin 4: Digital pin 9 (there is no choice) 
 //   Pin 5: Digital pin 8 (there is no choice)
 
-class Pms5003 {
+class Pmsx003 {
 public:
 	typedef uint16_t pmsData;
 	typedef uint8_t pmsIdx;
@@ -26,8 +26,8 @@ private:
 	static const decltype(timeout) timeoutPassive = 68;  // Transfer time of 1start + 32data + 1stop using 9600bps is 33 usec. timeoutPassive could be at least 34, Value of 68 is an arbitrary doubled
 	static const auto ackTimeout = 30U;                  // Time to complete response after write command
 
-#if defined PMS_ALTSOFTSERIAL
-	AltSoftSerial pmsSerial;
+#if defined PMS_SOFTSERIAL
+	SoftwareSerial* _pmsSerial;
 #endif  
 
 public:
@@ -42,7 +42,7 @@ public:
 
 	static const char *errorMsg[nValues_PmsStatus];
 
-	enum PmsCmd : __uint24 {
+	enum PmsCmd {
 		cmdReadData = 0x0000e2L,
 		cmdModePassive = 0x0000e1L,
 		cmdModeActive = 0x0100e1L,
@@ -78,8 +78,8 @@ public:
 
 	static const auto wakeupTime = 2500U;    // Experimentally, time to get ready after reset/wakeup
 
-	Pms5003();
-	~Pms5003();
+	Pmsx003(int8_t swsRX, int8_t swsTX);
+	~Pmsx003();
 	bool begin(void);
 	void end(void);
 	size_t available(void);

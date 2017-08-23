@@ -8,10 +8,10 @@
 //
 
 #if defined PMS_DYNAMIC
-Pms5003 *pms_ = nullptr;
+Pmsx003 *pms_ = nullptr;
 #define pms (*pms_)
 #else
-Pms5003 pms;
+Pmsx003 pms(D3, D4);
 #endif
 
 ////////////////////////////////////////
@@ -19,16 +19,16 @@ Pms5003 pms;
 void setup(void) {
 	Serial.begin(115200);
 	while (!Serial) {};
-	Serial.println("PMS5003");
+	Serial.println("Pmsx003");
 
 #if defined PMS_DYNAMIC
-	pms_ = new Pms5003();
+	pms_ = new Pmsx003(D3, D4);
 #else
 	pms.begin();
 #endif 
 
-	pms.waitForData(Pms5003::wakeupTime);
-	pms.write(Pms5003::cmdModeActive);
+	pms.waitForData(Pmsx003::wakeupTime);
+	pms.write(Pmsx003::cmdModeActive);
 }
 
 ////////////////////////////////////////
@@ -37,15 +37,15 @@ auto lastRead = millis();
 
 void loop(void) {
 
-	const Pms5003::pmsIdx n = Pms5003::nValues_PmsDataNames;
-	Pms5003::pmsData data[n];
+	const Pmsx003::pmsIdx n = Pmsx003::nValues_PmsDataNames;
+	Pmsx003::pmsData data[n];
 
 	auto t0Read = millis();
-	Pms5003::PmsStatus status = pms.read(data, n);
+	Pmsx003::PmsStatus status = pms.read(data, n);
 	auto t1Read = millis();
 
 	switch (status) {
-		case Pms5003::OK:
+		case Pmsx003::OK:
 		{
 			Serial.print("_________________ time of read(): ");
 			Serial.print(t1Read - t0Read);
@@ -55,21 +55,21 @@ void loop(void) {
 			Serial.println(newRead - lastRead);
 			lastRead = newRead;
 
-			for (Pms5003::pmsIdx i = 0; i < n; ++i) {
+			for (Pmsx003::pmsIdx i = 0; i < n; ++i) {
 				Serial.print(data[i]);
 				Serial.print("\t");
-				Serial.print(Pms5003::getDataNames(i));
+				Serial.print(Pmsx003::getDataNames(i));
 				Serial.print(" [");
-				Serial.print(Pms5003::getMetrics(i));
+				Serial.print(Pmsx003::getMetrics(i));
 				Serial.print("]");
 				Serial.println();
 			}
 			break;
 		}
-		case Pms5003::noData:
+		case Pmsx003::noData:
 			break;
 		default:
 			Serial.println("_________________");
-			Serial.println(Pms5003::errorMsg[status]);
+			Serial.println(Pmsx003::errorMsg[status]);
 	};
 }

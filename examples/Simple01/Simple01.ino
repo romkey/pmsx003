@@ -2,18 +2,18 @@
 
 #include <pms.h>
 
-Pms5003 pms;
+Pmsx003 pms(D3, D4);
 
 ////////////////////////////////////////
 
 void setup(void) {
 	Serial.begin(115200);
 	while (!Serial) {};
-	Serial.println("PMS5003");
+	Serial.println("Pmsx003");
 
 	pms.begin();
-	pms.waitForData(Pms5003::wakeupTime);
-	pms.write(Pms5003::cmdModeActive);
+	pms.waitForData(Pmsx003::wakeupTime);
+	pms.write(Pmsx003::cmdModeActive);
 }
 
 ////////////////////////////////////////
@@ -22,13 +22,13 @@ auto lastRead = millis();
 
 void loop(void) {
 
-	const auto n = Pms5003::Reserved;
-	Pms5003::pmsData data[n];
+	const auto n = Pmsx003::Reserved;
+	Pmsx003::pmsData data[n];
 
-	Pms5003::PmsStatus status = pms.read(data, n);
+	Pmsx003::PmsStatus status = pms.read(data, n);
 
 	switch (status) {
-		case Pms5003::OK:
+		case Pmsx003::OK:
 		{
 			Serial.println("_________________");
 			auto newRead = millis();
@@ -38,21 +38,21 @@ void loop(void) {
 
 			// For loop starts from 3
 			// Skip the first three data (PM1dot0CF1, PM2dot5CF1, PM10CF1)
-			for (size_t i = Pms5003::PM1dot0; i < n; ++i) { 
+			for (size_t i = Pmsx003::PM1dot0; i < n; ++i) { 
 				Serial.print(data[i]);
 				Serial.print("\t");
-				Serial.print(Pms5003::dataNames[i]);
+				Serial.print(Pmsx003::dataNames[i]);
 				Serial.print(" [");
-				Serial.print(Pms5003::metrics[i]);
+				Serial.print(Pmsx003::metrics[i]);
 				Serial.print("]");
 				Serial.println();
 			}
 			break;
 		}
-		case Pms5003::noData:
+		case Pmsx003::noData:
 			break;
 		default:
 			Serial.println("_________________");
-			Serial.println(Pms5003::errorMsg[status]);
+			Serial.println(Pmsx003::errorMsg[status]);
 	};
 }

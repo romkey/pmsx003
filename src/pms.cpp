@@ -47,66 +47,65 @@ inline void sumBuffer(uint16_t *sum, const uint16_t data) {
 
 ////////////////////////////////////////
 
-void Pms5003::setTimeout(const decltype(timeout) timeout) {
-	pmsSerial.setTimeout(timeout);
+void Pmsx003::setTimeout(const decltype(timeout) timeout) {
+	this->_pmsSerial->setTimeout(timeout);
 	this->timeout = timeout;
 };
 
-decltype(Pms5003::timeout) Pms5003::getTimeout(void) const {
+decltype(Pmsx003::timeout) Pmsx003::getTimeout(void) const {
 	return timeout;
 };
 
-Pms5003::Pms5003() : passive(tribool(unknown)), sleep(tribool(unknown)) {
+Pmsx003::Pmsx003(int8_t swsRX, int8_t swsTX) : passive(tribool(unknown)), sleep(tribool(unknown)) {
 #if defined PMS_DYNAMIC
 	begin();
 #endif
+	this->_pmsSerial = new SoftwareSerial(swsRX, swsTX);
 };
 
-Pms5003::~Pms5003() {
+Pmsx003::~Pmsx003() {
 #if defined PMS_DYNAMIC
 	end();
 #endif
 }
 
-bool Pms5003::begin(void) {
-	pmsSerial.setTimeout(Pms5003::timeoutPassive);
-	if (!pmsSerial.begin(9600)) {
-		return false;
-	}
+bool Pmsx003::begin(void) {
+	this->_pmsSerial->setTimeout(Pmsx003::timeoutPassive);
+	this->_pmsSerial->begin(9600);
 	return true;
 };
 
-void Pms5003::end(void) {
-	pmsSerial.end();
+void Pmsx003::end(void) {
+	this->_pmsSerial->end();
 };
 
-size_t Pms5003::available(void) {
-	while (pmsSerial.available()) {
-		if (pmsSerial.peek() != sig[0]) {
-			pmsSerial.read();
+size_t Pmsx003::available(void) {
+	while (this->_pmsSerial->available()) {
+		if (this->_pmsSerial->peek() != sig[0]) {
+			this->_pmsSerial->read();
 		} else {
 			break;
 		}
 	}
-	return static_cast<size_t>(pmsSerial.available());
+	return static_cast<size_t>(this->_pmsSerial->available());
 }
 
-Pms5003::PmsStatus Pms5003::read(pmsData *data, const size_t nData, const uint8_t dataSize) {
+Pmsx003::PmsStatus Pmsx003::read(pmsData *data, const size_t nData, const uint8_t dataSize) {
 
 	if (available() < (dataSize + 2) * sizeof(pmsData) + sizeof(sig)) {
 		return noData;
 	}
 
-	pmsSerial.read(); // Value is equal to sig[0]. There is no need to check the value, it was checked by prior peek()
+	this->_pmsSerial->read(); // Value is equal to sig[0]. There is no need to check the value, it was checked by prior peek()
 
-	if (pmsSerial.read() != sig[1]) // The rest of the buffer will be invalidated during the next read attempt
+	if (this->_pmsSerial->read() != sig[1]) // The rest of the buffer will be invalidated during the next read attempt
 		return readError;
 
 	uint16_t sum{ 0 };
 	sumBuffer(&sum, (uint8_t *)&sig, sizeof(sig));
 
 	pmsData thisFrameLen{ 0x1c };
-	if (pmsSerial.readBytes((uint8_t*)&thisFrameLen, sizeof(thisFrameLen)) != sizeof(thisFrameLen)) {
+	if (this->_pmsSerial->readBytes((uint8_t*)&thisFrameLen, sizeof(thisFrameLen)) != sizeof(thisFrameLen)) {
 		return readError;
 	};
 
@@ -128,7 +127,7 @@ Pms5003::PmsStatus Pms5003::read(pmsData *data, const size_t nData, const uint8_
 	}
 
 	if (toRead) {
-		if (pmsSerial.readBytes((uint8_t*)data, toRead) != toRead) {
+		if (this->_pmsSerial->readBytes((uint8_t*)data, toRead) != toRead) {
 			return readError;
 		}
 		sumBuffer(&sum, (uint8_t*)data, toRead);
@@ -140,7 +139,7 @@ Pms5003::PmsStatus Pms5003::read(pmsData *data, const size_t nData, const uint8_
 
 	pmsData crc;
 	for (; toRead < thisFrameLen; toRead += 2) {
-		if (pmsSerial.readBytes((uint8_t*)&crc, sizeof(crc)) != sizeof(crc)) {
+		if (this->_pmsSerial->readBytes((uint8_t*)&crc, sizeof(crc)) != sizeof(crc)) {
 			return readError;
 		};
 
@@ -157,19 +156,19 @@ Pms5003::PmsStatus Pms5003::read(pmsData *data, const size_t nData, const uint8_
 	return OK;
 }
 
-void Pms5003::flushInput(void) {
-	pmsSerial.flushInput();
+void Pmsx003::flushInput(void) {
+	this->_pmsSerial->flush();
 }
 
-bool Pms5003::waitForData(const unsigned int maxTime, const size_t nData) {
+bool Pmsx003::waitForData(const unsigned int maxTime, const size_t nData) {
 	const auto t0 = millis();
 	if (nData == 0) {
 		for (; (millis() - t0) < maxTime; delay(1)) {
-			if (pmsSerial.available()) {
+			if (this->_pmsSerial->available()) {
 				return true;
 			}
 		}
-		return pmsSerial.available();
+		return this->_pmsSerial->available();
 	}
 
 	for (; (millis() - t0) < maxTime; delay(1)) {
@@ -180,18 +179,18 @@ bool Pms5003::waitForData(const unsigned int maxTime, const size_t nData) {
 	return available() >= nData;
 }
 
-bool Pms5003::write(const PmsCmd cmd) {
+bool Pmsx003::write(const PmsCmd cmd) {
 	static_assert(sizeof(cmd) >= 3, "Wrong definition of PmsCmd (too short)");
 
 	if ((cmd != cmdReadData) && (cmd != cmdWakeup)) {
 		flushInput();
 	}
 
-	if (pmsSerial.write(sig, sizeof(sig)) != sizeof(sig)) {
+	if (this->_pmsSerial->write(sig, sizeof(sig)) != sizeof(sig)) {
 		return false;
 	}
 	const size_t cmdSize = 3;
-	if (pmsSerial.write((uint8_t*)&cmd, cmdSize) != cmdSize) {
+	if (this->_pmsSerial->write((uint8_t*)&cmd, cmdSize) != cmdSize) {
 		return false;
 	}
 
@@ -199,7 +198,7 @@ bool Pms5003::write(const PmsCmd cmd) {
 	sumBuffer(&sum, sig, sizeof(sig));
 	sumBuffer(&sum, (uint8_t*)&cmd, cmdSize);
 	swapEndianBig16(&sum);
-	if (pmsSerial.write((uint8_t*)&sum, sizeof(sum)) != sizeof(sum)) {
+	if (this->_pmsSerial->write((uint8_t*)&sum, sizeof(sum)) != sizeof(sum)) {
 		return false;
 	}
 
@@ -224,10 +223,10 @@ bool Pms5003::write(const PmsCmd cmd) {
 	if ((cmd != cmdReadData) && (cmd != cmdWakeup)) {
 		const auto responseFrameSize = 8;
 		if (!waitForData(ackTimeout, responseFrameSize)) {
-			pmsSerial.flushInput();
+			this->_pmsSerial->flush();
 			return true;
 		}
-		Pms5003::pmsData response = 0xCCCC;
+		Pmsx003::pmsData response = 0xCCCC;
 		read(&response, 1, 1);
 	}
 
@@ -235,10 +234,10 @@ bool Pms5003::write(const PmsCmd cmd) {
 		if ((cmd != cmdReadData) && (cmd != cmdWakeup)) {
 			const auto responseFrameSize = 8;
 			if (!waitForData(ackTimeout, responseFrameSize)) {
-				pmsSerial.flushInput();
+				this->_pmsSerial->flushInput();
 				return false;
 			}
-			Pms5003::pmsData response = 0xCCCC;
+			Pmsx003::pmsData response = 0xCCCC;
 			if (read(&response, 1, 1) != OK) {
 				return false;
 			}
@@ -251,15 +250,15 @@ bool Pms5003::write(const PmsCmd cmd) {
 	return true;
 }
 
-const char *Pms5003::getMetrics(const pmsIdx idx) {
-	return idx < nValues_PmsDataNames ? Pms5003::metrics[idx] : "???";
+const char *Pmsx003::getMetrics(const pmsIdx idx) {
+	return idx < nValues_PmsDataNames ? Pmsx003::metrics[idx] : "???";
 }
 
-const char *Pms5003::getDataNames(const pmsIdx idx) {
-	return idx < nValues_PmsDataNames ? Pms5003::dataNames[idx] : "???";
+const char *Pmsx003::getDataNames(const pmsIdx idx) {
+	return idx < nValues_PmsDataNames ? Pmsx003::dataNames[idx] : "???";
 }
 
-const char * Pms5003::errorMsg[nValues_PmsStatus]{
+const char * Pmsx003::errorMsg[nValues_PmsStatus]{
 	"OK",
 	"noData",
 	"readError",
@@ -267,7 +266,7 @@ const char * Pms5003::errorMsg[nValues_PmsStatus]{
 	"sumError"
 };
 
-const char *Pms5003::metrics[]{
+const char *Pmsx003::metrics[]{
 	"mcg/m3",
 	"mcg/m3",
 	"mcg/m3",
@@ -286,7 +285,7 @@ const char *Pms5003::metrics[]{
 	"???"
 };
 
-const char *Pms5003::dataNames[]{
+const char *Pmsx003::dataNames[]{
 	"PM1.0, CF=1",
 	"PM2.5, CF=1",
 	"PM10.  CF=1",

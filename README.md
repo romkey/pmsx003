@@ -1,11 +1,12 @@
-# pms5003
+# Pmsx003
 
-I'm proud to present my Arduino library supporting PMS5003 Air Quality Sensor.
+I'm proud to present my ESP8266 library supporting PMSx003 Air Quality Sensor.
+It is based on [jbanaszczyk/Pmsx003](https://github.com/jbanaszczyk/Pmsx003) library for Arduino. I did a little job.
 
 ## Features
 
-* Supports all Plantover PMS5003 features (sleep/wake up, passive/active modes),
-* Probably works fine with PMS7003 and PMS3003,
+* Supports all Plantover Pmsx003 features (sleep/wake up, passive/active modes), based on PMS5003,
+* Probably works fine with PMS7003(tested) and PMS3003(not tested),
 * Highly customizable:
   * Uses any serial communication library,
   * You have a choice to use or not to use: global variables or class instances.
@@ -14,40 +15,40 @@ I'm proud to present my Arduino library supporting PMS5003 Air Quality Sensor.
 
 ## Preparation
 
-Install pms5003 library.
+Install Pmsx003 library.
 
-Let's use [DrDiettrich' fork of AltSoftSerial Library](https://github.com/DrDiettrich/AltSoftSerial.git). Install it.
-* pms5003 will not compile using original AltSoftSerial lib.
+Let's use [EspSoftwareSerial Library](https://github.com/plerup/espsoftwareserial). Install it.
 
 Make some connections:
-* **Important**: pms5003 uses 3.3V logic. Make sure your Arduino board uses 3.3V logic too, use converters if required.
-* PMS5003 Pin 1: Vcc
-* PMS5003 Pin 2: GND
-* PMS5003 Pin 4: Digital pin 9 (there is no choice, forced by AltSerial)
-* PMS5003 Pin 5: Digital pin 8 (there is no choice)
+* **Important**: Pmsx003 uses 3.3V logic. Make sure your Arduino board uses 3.3V logic too, use converters if required.
+* Pmsx003 Pin 1: Vcc
+* Pmsx003 Pin 2: GND
+* Pmsx003 Pin 4: Your defined swsTX in Pmsx003(int8_t swsRX, int8_t swsTX)
+* Pmsx003 Pin 5: Your defined swsRX in Pmsx003(int8_t swsRX, int8_t swsTX)
 
 ## Applications
 
 ### Hello. The Basic scenario.<a name="Hello"></a>
 
-Use the code: https://github.com/jbanaszczyk/pms5003/tree/master/examples/01_Simple
+Use the code: https://github.com/riverscn/pmsx003/tree/master/examples/Simple01
 
 ```C++
 #include <Arduino.h>
+
 #include <pms.h>
 
-Pms5003 pms;
+Pmsx003 pms(D3, D4);
 
 ////////////////////////////////////////
 
 void setup(void) {
 	Serial.begin(115200);
 	while (!Serial) {};
-	Serial.println("PMS5003");
+	Serial.println("Pmsx003");
 
 	pms.begin();
-	pms.waitForData(Pms5003::wakeupTime);
-	pms.write(Pms5003::cmdModeActive);
+	pms.waitForData(Pmsx003::wakeupTime);
+	pms.write(Pmsx003::cmdModeActive);
 }
 
 ////////////////////////////////////////
@@ -56,13 +57,13 @@ auto lastRead = millis();
 
 void loop(void) {
 
-	const auto n = Pms5003::Reserved;
-	Pms5003::pmsData data[n];
+	const auto n = Pmsx003::Reserved;
+	Pmsx003::pmsData data[n];
 
-	Pms5003::PmsStatus status = pms.read(data, n);
+	Pmsx003::PmsStatus status = pms.read(data, n);
 
 	switch (status) {
-		case Pms5003::OK:
+		case Pmsx003::OK:
 		{
 			Serial.println("_________________");
 			auto newRead = millis();
@@ -72,22 +73,22 @@ void loop(void) {
 
 			// For loop starts from 3
 			// Skip the first three data (PM1dot0CF1, PM2dot5CF1, PM10CF1)
-			for (size_t i = Pms5003::PM1dot0; i < n; ++i) {
+			for (size_t i = Pmsx003::PM1dot0; i < n; ++i) { 
 				Serial.print(data[i]);
 				Serial.print("\t");
-				Serial.print(Pms5003::dataNames[i]);
+				Serial.print(Pmsx003::dataNames[i]);
 				Serial.print(" [");
-				Serial.print(Pms5003::metrics[i]);
+				Serial.print(Pmsx003::metrics[i]);
 				Serial.print("]");
 				Serial.println();
 			}
 			break;
 		}
-		case Pms5003::noData:
+		case Pmsx003::noData:
 			break;
 		default:
 			Serial.println("_________________");
-			Serial.println(Pms5003::errorMsg[status]);
+			Serial.println(Pmsx003::errorMsg[status]);
 	};
 }
 
@@ -113,15 +114,15 @@ Wait time 836
 
 ## Classes
 
-### Pms5003<a name="API_Pms5003"></a>
+### Pmsx003<a name="API_Pmsx003"></a>
 ```C++
-class Pms5003 {...}
+class Pmsx003 {...}
 ```
-Pms5003 provides all methods, data type, enums to provide support for PMS5003 sensor. In most cases there will be used single object of that class.
+Pmsx003 provides all methods, data type, enums to provide support for Pmsx003 sensor. In most cases there will be used single object of that class.
 
 _Shown in_: [Basic scenario](#Hello)
 
-#### ctor/dtor: Pms5003(), ~Pms5003()
+#### ctor/dtor: Pmsx003(int8_t swsRX, int8_t swsTX), ~Pmsx003()
 
 See: [Config: PMS_DYNAMIC](#Cfg_PMS_DYNAMIC)
 
@@ -141,7 +142,7 @@ typedef uint8_t pmsIdx;
 ```
 Underlying type of [PmsDataNames](#API_PmsDataNames), suitable for declaring size of array receiving data from the sensor or to iterate over it.
 
-_Shown in_: [Second example](https://github.com/jbanaszczyk/pms5003/blob/master/examples/Dynamic02/Dynamic02.ino)
+_Shown in_: [Second example](https://github.com/jbanaszczyk/Pmsx003/blob/master/examples/Dynamic02/Dynamic02.ino)
 
 You can use any unsigned int type instead. _As shown in_: [Basic scenario](#Hello)
 
@@ -230,13 +231,13 @@ _Shown in_: [Basic scenario](#Hello)
 
 #### getDataNames<a name="API_getDataNames"></a>
 ```Cpp
-const char *Pms5003::getDataNames(const uint8_t idx);
-Serial.print(Pms5003::getDataNames(i)); // instead of Serial.print(Pms5003::dataNames[i]);
+const char *Pmsx003::getDataNames(const uint8_t idx);
+Serial.print(Pmsx003::getDataNames(i)); // instead of Serial.print(Pmsx003::dataNames[i]);
 ```
 
 There is provided range-safe function to access dataNames values: getDataNames();
 
-_Shown in_: [Second example](https://github.com/jbanaszczyk/pms5003/blob/master/examples/Dynamic02/Dynamic02.ino)
+_Shown in_: [Second example](https://github.com/jbanaszczyk/Pmsx003/blob/master/examples/Dynamic02/Dynamic02.ino)
 
 ### metrics<a name="API_metrics"></a>
 ```C++
@@ -249,13 +250,13 @@ _Shown in_: [Basic scenario](#Hello)
 
 #### getMetrics<a name="API_getMetrics"></a>
 ```Cpp
-const char *Pms5003::getMetrics(const uint8_t idx);
-Serial.print(Pms5003::getMetrics(i)); // instead of Serial.print(Pms5003::metrics[i]);
+const char *Pmsx003::getMetrics(const uint8_t idx);
+Serial.print(Pmsx003::getMetrics(i)); // instead of Serial.print(Pmsx003::metrics[i]);
 ```
 
 There is provided range-safe function to access metrics values: getMetrics();
 
-_Shown in_: [Second example](https://github.com/jbanaszczyk/pms5003/blob/master/examples/Dynamic02/Dynamic02.ino)
+_Shown in_: [Second example](https://github.com/jbanaszczyk/Pmsx003/blob/master/examples/Dynamic02/Dynamic02.ino)
 
 ## Methods
 
@@ -265,9 +266,9 @@ _Shown in_: [Second example](https://github.com/jbanaszczyk/pms5003/blob/master/
 bool begin(void);
 ```
 
-Initializes Pms5003 object.
+Initializes Pmsx003 object.
 
-If defined ```PMS_DYNAMIC```: automatically executed by ctor: ```Pms5003()```
+If defined ```PMS_DYNAMIC```: automatically executed by ctor: ```Pmsx003(int8_t swsRX, int8_t swsTX)```
 
 Should be executed by global ```setup()``` otherwise.
 
@@ -283,9 +284,9 @@ See: [Config: PMS_DYNAMIC](#Cfg_PMS_DYNAMIC)
 void end(void);
 ```
 
-Destroys Pms5003 object.
+Destroys Pmsx003 object.
 
-If defined ```PMS_DYNAMIC```: automatically executed by dtor: ```~Pms5003()```
+If defined ```PMS_DYNAMIC```: automatically executed by dtor: ```~Pmsx003()```
 
 Not needed otherwise.
 
@@ -301,7 +302,7 @@ void setTimeout(const unsigned long timeout);
 unsigned long getTimeout(void) const;
 ```
 
-By default - the most important method: ```read()``` does not block (it does not wait for data, just returns ```Pms5003::noData```).
+By default - the most important method: ```read()``` does not block (it does not wait for data, just returns ```Pmsx003::noData```).
 
 ```write()``` in case of data transfer errors may block.
 
@@ -338,7 +339,7 @@ bool waitForData(const unsigned int maxTime, const size_t nData = 0);
 ```
 **waitForData() may block.**
 
-waitForData(maxTime) works like a delay(maxTime), but can be terminated by Pms5003 sensor activity.
+waitForData(maxTime) works like a delay(maxTime), but can be terminated by Pmsx003 sensor activity.
 
 Arguments:
 * maxTime: amount of time to wait,
@@ -359,16 +360,16 @@ PmsStatus read(pmsData *data, const size_t nData, const uint8_t dataSize = 13);
 
 **read() should not block.**
 
-The most important function of the library. It receives, transforms and verifies data provided by PMS5003 sensor.
+The most important function of the library. It receives, transforms and verifies data provided by Pmsx003 sensor.
 
 Arguments:
 * data: pointer to an array containing _nData_ elements of type [pmsData](#pmsData).
 * nData: number of data, that can be received and stored.
 * dataSize: In general: don't use.
 
-Returns [Pms5003::PmsStatus](#API_PmsStatus):
-* ```Pms5003::OK```: whole, not malformed data frame was received from the sensor, up to nData elements of *data was filled according to received data.
-* ```Pms5003::noData```: There is not enough data to read.
+Returns [Pmsx003::PmsStatus](#API_PmsStatus):
+* ```Pmsx003::OK```: whole, not malformed data frame was received from the sensor, up to nData elements of *data was filled according to received data.
+* ```Pmsx003::noData```: There is not enough data to read.
 * Otherwise: refer to [errorMsg](#API_errorMsg)
 
 _Typical usage_: [Basic scenario](#Hello)
@@ -379,7 +380,7 @@ _nData_:
 
 _dataSize_:
 * It specifies expected size of data frame: dataFrameSize = ( dataSize + 3 ) * 2;
-* If there is not enough data to complete the whole frame - read() returns ```Pms5003::noData``` and does not block.
+* If there is not enough data to complete the whole frame - read() returns ```Pmsx003::noData``` and does not block.
 * Typical frame sent by the sensor contains 32 bytes. Appropriate dataSize value is 13 (the default).
 
 ### write<a name="API_write"></a>
@@ -389,9 +390,9 @@ bool write(const PmsCmd cmd);
 ```
 **write() can block up to [ackTimeout](#API_ackTimeout) (currently 30milliseconds), typically about 10milliseconds.**
 
-It sends a command to PMS5003 sensor. Refer to [commands section](#Commands).
+It sends a command to Pmsx003 sensor. Refer to [commands section](#Commands).
 
-PMS5003 responds to some [commands](#commands). The response is gathered and verified be the write() internally. That is the reason, that write() can block.
+Pmsx003 responds to some [commands](#commands). The response is gathered and verified be the write() internally. That is the reason, that write() can block.
 
 Arguments:
 * cmd: one of [PmsCmd](#API_PmsCmd)
@@ -425,9 +426,9 @@ _Shown in_: [Basic scenario](#Hello)
 
 ## Commands and states<a name="commands"></a>
 
-PMS5003 accepts a few commands. They are not fully documented. 
+Pmsx003 accepts a few commands. They are not fully documented. 
 
-You can send commands to the PMS5003 sensor using [write()](#API_write).
+You can send commands to the Pmsx003 sensor using [write()](#API_write).
 
 |From State|input                |To State  |Output                                |
 |----------|---------------------|----------|--------------------------------------|
