@@ -1,7 +1,7 @@
 # Pmsx003
 
 I'm proud to present my ESP8266 library supporting PMSx003 Air Quality Sensor.
-It is based on [jbanaszczyk/Pmsx003](https://github.com/jbanaszczyk/Pmsx003) library for Arduino. I did a little job.
+It is based on [jbanaszczyk/Pms5003](https://github.com/jbanaszczyk/Pms5003) library for Arduino. I did a little job.
 
 ## Features
 
