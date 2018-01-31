@@ -121,7 +121,7 @@ Pmsx003::PmsStatus Pmsx003::read(pmsData *data, const size_t nData, const uint8_
 		return frameLenMismatch;
 	}
 
-	size_t toRead{ min(thisFrameLen - 2, nData * sizeof(pmsData)) };
+	size_t toRead{ min<unsigned int>(thisFrameLen - 2, nData * sizeof(pmsData)) };
 	if (data == nullptr) {
 		toRead = 0;
 	}
