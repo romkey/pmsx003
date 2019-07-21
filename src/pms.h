@@ -27,7 +27,7 @@ private:
 	static const auto ackTimeout = 30U;                  // Time to complete response after write command
 
 #if defined PMS_SOFTSERIAL
-	SoftwareSerial* _pmsSerial;
+	HardwareSerial* _pmsSerial;
 #endif  
 
 public:

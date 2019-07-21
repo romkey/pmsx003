@@ -60,7 +60,9 @@ Pmsx003::Pmsx003(int8_t swsRX, int8_t swsTX) : passive(tribool(unknown)), sleep(
 #if defined PMS_DYNAMIC
 	begin();
 #endif
-	this->_pmsSerial = new SoftwareSerial(swsRX, swsTX);
+  static HardwareSerial pms_serial(2);
+
+  this->_pmsSerial = &pms_serial;
 };
 
 Pmsx003::~Pmsx003() {
@@ -70,8 +72,10 @@ Pmsx003::~Pmsx003() {
 }
 
 bool Pmsx003::begin(void) {
+
 	this->_pmsSerial->setTimeout(Pmsx003::timeoutPassive);
-	this->_pmsSerial->begin(9600);
+	this->_pmsSerial->begin(9600, (uint32_t)SERIAL_8N1, 17, 16);
+
 	return true;
 };
 
